@@ -557,6 +557,7 @@ def test(P, instance):
     #     current_state_tsr = state2tens(current_state)
     #     while True:
     #         next_node, est_reward = Q_func.get_best_action(current_state_tsr, current_state)
+    #         if est_reward < 0: break
     #         nn_solution = nn_solution + next_node
     #         current_state = State(partial_solution=nn_solution, graph=graph)
     #         current_state_tsr = state2tens(current_state)
