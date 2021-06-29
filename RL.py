@@ -98,14 +98,15 @@ class QNet(nn.Module):
         local_action = self.theta7(mu)  # (batch_dim, nr_nodes, emb_dim)
 
         out = F.relu(torch.cat([global_state, local_action], dim=2))
-        return self.theta5(out).squeeze(dim=2)
+        out = self.theta5(out).squeeze(dim=2)
+        return out
 
 class QFunction():
     def __init__(self, model, optimizer, lr_scheduler):
         self.model = model
         self.optimizer = optimizer
         self.lr_scheduler = lr_scheduler
-        self.loss_fn = nn.MSELoss()
+        self.loss_fn = nn.L1Loss()
 
     def predict(self, state_tsr, W):
         state_tsr = state_tsr.float().to(device)
@@ -126,10 +127,8 @@ class QFunction():
         # print(W.device)
         # print(state_tsr.device)
         estimated_rewards = self.predict(state_tsr, W)  # size (nr_nodes,)
-        sorted_reward_idx = estimated_rewards.argsort(descending=True)
-        set_sorted_reward_idx = set(sorted_reward_idx.tolist())
-        candidate_nodes = set(graph.get_candidate_nodes(state.partial_solution))
-        return list(set_sorted_reward_idx.intersection(candidate_nodes))
+        estimated_rewards[state.partial_solution] = float("-inf")
+        return estimated_rewards
 
     def get_best_action(self, state_tsr, state):
         """ Computes the best (greedy) action to take from a given state
@@ -170,6 +169,10 @@ class QFunction():
         estimated_rewards = self.model(xv.float(), Ws_tsr.float())
         estimated_rewards = estimated_rewards[range(len(actions)), actions]
         targets = torch.tensor(targets, dtype=torch.float32, device=device)
+
+        # print(f"estimated: {estimated_rewards}")
+        # print(f"targets: {targets}")
+
         loss = self.loss_fn(estimated_rewards, targets)
         loss_val = loss.item()
 
@@ -203,17 +206,17 @@ def state2tens(state):
     solution = set(state.partial_solution)
     graph = state.graph
     W = graph.W
+    total_W = graph.W.sum()
     candidate_nodes = graph.get_candidate_nodes(solution)
     candidate_nodes = list(candidate_nodes)
+    len_sol = len(solution)
+    len_cand = len(candidate_nodes)
     xv = [[
-        # (1 if i in solution else 0),
+        (1 if i in solution else 0),
         (1 if i in candidate_nodes else 0),
-        torch.sum(W[i,:]),
-        torch.sum(W[i,:] > 0),
-        torch.sum(W[i,list(solution)]),
-        torch.sum(W[i,list(solution)] > 0),
-        torch.sum(W[i,candidate_nodes]),
-        torch.sum(W[i,candidate_nodes] > 0),
+        torch.sum(W[i,:])/total_W,
+        torch.sum(W[i,list(solution)])/total_W,
+        torch.sum(W[i,candidate_nodes])/total_W
         ] for i in range(graph.n)]
     return torch.tensor(xv, dtype=torch.float32, requires_grad=False, device=device)
 
@@ -234,7 +237,7 @@ def init_model(P, fname=None):
     return Q_func, Q_net, optimizer, lr_scheduler
 
 def checkpoint_model(model, optimizer, lr_scheduler, loss,
-                     episode, avg_weight, folder_name='./models'):
+                     episode, avg_weight, folder_name='./models2'):
     if not os.path.exists(folder_name):
         os.makedirs(folder_name)
 
@@ -294,7 +297,8 @@ def training(P):
         actions = []
 
         # current value of epsilon
-        epsilon = max(P["MIN_EPSILON"], (1-P["EPSILON_DECAY_RATE"])**episode)
+        # epsilon = max(P["MIN_EPSILON"], (1-P["EPSILON_DECAY_RATE"])**episode)
+        epsilon = 0.9
 
         nr_explores = 0
         t = -1
@@ -310,7 +314,7 @@ def training(P):
                 est_rewards.append(None)
             else: # select best node
                 next_node, est_reward = Q_func.get_best_action(current_state_tsr, current_state)
-                if est_reward < 0.5 and len(solution) >= graph.n//2: break
+                if est_reward < 0 and len(solution) > 2: break
                 est_rewards.append(est_reward)
 
             next_solution = solution + [next_node]
@@ -331,9 +335,11 @@ def training(P):
         best, _ = ts.intensification(frozenset(solution))
         best_objective = best[0]
         best_solution = best[1]
-        not_in = sum([ 1 for node in solution if node not in best_solution ])
+        # not_in = sum([ 1 for node in solution if node not in best_solution ])
+        # in_best = len(best_solution)
 
-        rewards = [ len(best_solution) if node in best_solution else -not_in for node in solution ]
+        rewards = [ 1 if node in best_solution else -1 for node in solution ]
+
 
         # print(f"solution: {solution}")
         # print(f"best_solution: {best_solution}")
@@ -372,7 +378,7 @@ def training(P):
             med_weight = np.median(path_weights[-100:])
             if med_weight > current_min_med_weight:
                 current_min_med_weight = med_weight
-                checkpoint_model(Q_net, optimizer, lr_scheduler, loss, episode, med_weight)
+                checkpoint_model(Q_net, optimizer, lr_scheduler, loss, episode, med_weight, P["FOLDER_NAME"])
 
         weight = sum(rewards)
         path_weights.append(weight)
@@ -541,6 +547,7 @@ def test(P, instance):
 
     graph = MMDP(instance)
     time_limit = 100
+    if "20" not in instance: return
     if "500" in instance or "1000" in instance or "750" in instance:
         time_limit = 1000
     ts = TabuSearch(graph, time_limit=time_limit)
@@ -567,10 +574,17 @@ def test(P, instance):
         nn_solution = []
         current_state = State(partial_solution=nn_solution, graph=graph)
         current_state_tsr = state2tens(current_state)
-        while len(nn_solution) < graph.n//4:
+        print(f"generating S0")
+        while True:
             est_rewards = Q_func.evaluate_nodes(current_state_tsr,  current_state)
-            selected_nodes = random.sample(est_rewards[:len(est_rewards)//4], len(est_rewards)//16)
-            nn_solution = nn_solution + selected_nodes
+            if (est_rewards > 0).sum() == 0 and len(nn_solution) >= 2: break
+
+            m = torch.nn.Softmax()
+            idx = torch.arange(len(est_rewards))[est_rewards != float("-inf")]
+            p = m(est_rewards[est_rewards != float("-inf")])
+            selected_node = np.random.choice(idx, replace=False, p=p.numpy())
+
+            nn_solution.append(selected_node)
             current_state = State(partial_solution=nn_solution, graph=graph)
             current_state_tsr = state2tens(current_state)
         nn_solution = list(set(nn_solution))
@@ -580,23 +594,23 @@ def test(P, instance):
 
     f = open("results.txt", "a")
     f.write(f"{instance}, ")
-    ts.div_function = diversification
-    solution = ts.solve()
+
+    solution = ts.solve(diversification)
     print(f"DRL result: {solution[0]}")
     f.write(f"{solution[0]}, ")
-    ts.div_function = ts.diversification
-    solution = ts.solve()
-    f.write(f"{solution[0]}\n")
+
+    solution = ts.solve(ts.diversification)
     print(f"RND result: {solution[0]}")
+    f.write(f"{solution[0]}\n")
 
 def main(parameters):
-    # training(parameters)
-    typeI = glob.glob("instances/typeI/*")
-    typeII = glob.glob("instances/typeII/*")
-    instances = typeI + typeII
-    instances.sort()
-    for instance in instances:
-        test(parameters, instance)
+    training(parameters)
+    # typeI = glob.glob("instances/typeI/*")
+    # typeII = glob.glob("instances/typeII/*")
+    # instances = typeI + typeII
+    # instances.sort()
+    # for instance in instances:
+    #     test(parameters, instance)
 
 if __name__ == "__main__":
     PARAMETERS={
@@ -604,21 +618,21 @@ if __name__ == "__main__":
 
             # Graph
             # "NR_NODES": 40,
-            # "GRAPH_NU": 25,
-            "EMBEDDING_DIMENSIONS": 7,
+            # "GRAPH_NU": 25
+            "EMBEDDING_DIMENSIONS": 5,
             "EMBEDDING_ITERATIONS_T": 4,
 
             # Learning
-            "NR_EPISODES": 2001,
+            "NR_EPISODES": 1001,
             "MEMORY_CAPACITY": 2048,
             "N_STEP_QL": 4,
             "BATCH_SIZE": 128,
-            "GAMMA": 1.00,
+            "GAMMA": 0.5,
             "INIT_LR": 5e-3,
-            "LR_DECAY_RATE": 1. - 2e-5,
+            "LR_DECAY_RATE": 1. - 5e-5,
             "MIN_EPSILON": 0.05,
             # "EPSILON_DECAY_RATE": 2e-3,
-            "EPSILON_DECAY_RATE": 5e-4,
+            "EPSILON_DECAY_RATE": 5e-5,
 
             # where to save best models
             "FOLDER_NAME": './models'

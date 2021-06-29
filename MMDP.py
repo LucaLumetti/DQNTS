@@ -3,8 +3,7 @@ import random
 import numpy as np
 import time
 import torch
-
-GRAPH_SIZE = 20
+GRAPH_SIZE = 35
 
 device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
 # class MMDP:
@@ -46,6 +45,14 @@ class MMDP:
                 f"./instances/typeII/MDPII5_{GRAPH_SIZE}.txt",
                 f"./instances/typeI/MDPI6_{GRAPH_SIZE}.txt",
                 f"./instances/typeII/MDPII6_{GRAPH_SIZE}.txt",
+                f"./instances/typeI/MDPI7_{GRAPH_SIZE}.txt",
+                f"./instances/typeII/MDPII7_{GRAPH_SIZE}.txt",
+                f"./instances/typeI/MDPI8_{GRAPH_SIZE}.txt",
+                f"./instances/typeII/MDPII8_{GRAPH_SIZE}.txt",
+                f"./instances/typeI/MDPI9_{GRAPH_SIZE}.txt",
+                f"./instances/typeII/MDPII9_{GRAPH_SIZE}.txt",
+                f"./instances/typeI/MDPI10_{GRAPH_SIZE}.txt",
+                f"./instances/typeII/MDPII10_{GRAPH_SIZE}.txt",
                 ]
         if input_file is None:
             input_file = random.sample(files, 1)[0]

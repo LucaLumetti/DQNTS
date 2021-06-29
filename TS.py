@@ -10,16 +10,13 @@ class TabuSearch:
         self.best_x = (0, {})
         self._sol_expolored = 0
         self._visited_table = {}
-        self.div_function = None
+        self.div_function = self.diversification
 
-    def solve(self):
+    def solve(self, div_function):
         self.__init__(self._P, self.time_limit, self.alfa_limit)
         self.start_time = time.time()
         while time.time() - self.start_time < self.time_limit:
-            if self.div_function is not None:
-                x = self.div_function()
-            else:
-                x = self.diversification()
+            x = div_function()
 
             best, steps = self.intensification(frozenset(x[1]))
             self._sol_expolored += 1
