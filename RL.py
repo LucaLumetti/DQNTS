@@ -106,7 +106,7 @@ class QFunction():
         self.model = model
         self.optimizer = optimizer
         self.lr_scheduler = lr_scheduler
-        self.loss_fn = nn.L1Loss()
+        self.loss_fn = nn.MSELoss()
 
     def predict(self, state_tsr, W):
         state_tsr = state_tsr.float().to(device)
@@ -126,9 +126,14 @@ class QFunction():
         state_tsr = state_tsr.to(device)
         # print(W.device)
         # print(state_tsr.device)
-        estimated_rewards = self.predict(state_tsr, W)  # size (nr_nodes,)
-        estimated_rewards[state.partial_solution] = float("-inf")
-        return estimated_rewards
+        est_rewards = self.predict(state_tsr, W)  # size (nr_nodes,)
+        est_rewards = np.interp(est_rewards.to("cpu"), (est_rewards.min(), est_rewards.max()), (-1, +1))
+        idx = torch.arange(len(est_rewards))
+
+        est_rewards = np.delete(est_rewards, state.partial_solution)
+        idx = np.delete(idx, state.partial_solution)
+
+        return idx, est_rewards
 
     def get_best_action(self, state_tsr, state):
         """ Computes the best (greedy) action to take from a given state
@@ -140,6 +145,8 @@ class QFunction():
         # print(W.device)
         # print(state_tsr.device)
         estimated_rewards = self.predict(state_tsr, W)  # size (nr_nodes,)
+        estimated_rewards = np.interp(estimated_rewards.to("cpu"), (estimated_rewards.min(), estimated_rewards.max()), (-1, +1))
+        estimated_rewards = torch.from_numpy(estimated_rewards)
         sorted_reward_idx = estimated_rewards.argsort(descending=True)
 
         solution = state.partial_solution
@@ -209,14 +216,12 @@ def state2tens(state):
     total_W = graph.W.sum()
     candidate_nodes = graph.get_candidate_nodes(solution)
     candidate_nodes = list(candidate_nodes)
-    len_sol = len(solution)
-    len_cand = len(candidate_nodes)
+    solution = list(solution)
     xv = [[
         (1 if i in solution else 0),
-        (1 if i in candidate_nodes else 0),
-        torch.sum(W[i,:])/total_W,
-        torch.sum(W[i,list(solution)])/total_W,
-        torch.sum(W[i,candidate_nodes])/total_W
+        torch.sum(W[i,:]),
+        torch.sum(W[i,solution]),
+        torch.sum(W[i,candidate_nodes])
         ] for i in range(graph.n)]
     return torch.tensor(xv, dtype=torch.float32, requires_grad=False, device=device)
 
@@ -297,8 +302,8 @@ def training(P):
         actions = []
 
         # current value of epsilon
-        # epsilon = max(P["MIN_EPSILON"], (1-P["EPSILON_DECAY_RATE"])**episode)
-        epsilon = 0.9
+        epsilon = max(P["MIN_EPSILON"], (1-P["EPSILON_DECAY_RATE"])**episode)
+        # epsilon = 0.9
 
         nr_explores = 0
         t = -1
@@ -546,13 +551,12 @@ def test(P, instance):
     total_time_greedy = []
 
     graph = MMDP(instance)
-    time_limit = 100
-    if "20" not in instance: return
+    time_limit = 10
     if "500" in instance or "1000" in instance or "750" in instance:
-        time_limit = 1000
+        time_limit = 100
     ts = TabuSearch(graph, time_limit=time_limit)
 
-    print(f"Testing over {instance} at {datetime.datetime.now()}")
+    print(f"Testing over {instance} at {datetime.datetime.now()} for {time_limit}s")
 
     W = torch.tensor(graph.W_np, dtype=torch.float32, requires_grad=False, device=device)
 
@@ -574,34 +578,39 @@ def test(P, instance):
         nn_solution = []
         current_state = State(partial_solution=nn_solution, graph=graph)
         current_state_tsr = state2tens(current_state)
-        print(f"generating S0")
-        while True:
-            est_rewards = Q_func.evaluate_nodes(current_state_tsr,  current_state)
-            if (est_rewards > 0).sum() == 0 and len(nn_solution) >= 2: break
+        idx, est_rewards = Q_func.evaluate_nodes(current_state_tsr,  current_state)
 
-            m = torch.nn.Softmax()
-            idx = torch.arange(len(est_rewards))[est_rewards != float("-inf")]
-            p = m(est_rewards[est_rewards != float("-inf")])
-            selected_node = np.random.choice(idx, replace=False, p=p.numpy())
+        good_nodes = idx[est_rewards >= 0]
+        min_nodes = max(len(good_nodes)//4, 2)
+        selected_node = random.sample(list(good_nodes), random.randint(min_nodes, len(good_nodes)))
+        selected_node = [ int(n) for n in selected_node ]
+        nn_solution += selected_node
 
-            nn_solution.append(selected_node)
-            current_state = State(partial_solution=nn_solution, graph=graph)
-            current_state_tsr = state2tens(current_state)
-        nn_solution = list(set(nn_solution))
-        nn_solution.sort()
-        print(f"NN_SOL: {nn_solution}")
+        current_state = State(partial_solution=nn_solution, graph=graph)
+        current_state_tsr = state2tens(current_state)
+        # while True:
+        #     idx, est_rewards = Q_func.evaluate_nodes(current_state_tsr,  current_state)
+        #     # if (est_rewards >= 0).sum() == 0 and len(nn_solution) >= 2: break
+        #     if len(nn_solution) >= 2: break
+
+        #     good_nodes = idx[est_rewards >= 0]
+        #     selected_node = random.sample(list(good_nodes), random.randint(2, len(good_nodes)))
+        #     nn_solution += selected_node
+
+        #     current_state = State(partial_solution=nn_solution, graph=graph)
+        #     current_state_tsr = state2tens(current_state)
+        nn_solution = list(nn_solution)
+        # print(f"NN_SOL: {len(nn_solution)}")
         return (graph.objective(nn_solution), nn_solution)
 
     f = open("results.txt", "a")
-    f.write(f"{instance}, ")
+    r = open(f"solutions/{instance}.sol", "a")
 
     solution = ts.solve(diversification)
     print(f"DRL result: {solution[0]}")
-    f.write(f"{solution[0]}, ")
 
-    solution = ts.solve(ts.diversification)
-    print(f"RND result: {solution[0]}")
-    f.write(f"{solution[0]}\n")
+    f.write(f"{instance}: {solution[0]}\n")
+    r.write(f"{solution[1]}")
 
 def main(parameters):
     training(parameters)
@@ -619,18 +628,18 @@ if __name__ == "__main__":
             # Graph
             # "NR_NODES": 40,
             # "GRAPH_NU": 25
-            "EMBEDDING_DIMENSIONS": 5,
-            "EMBEDDING_ITERATIONS_T": 4,
+            "EMBEDDING_DIMENSIONS": 4,
+            "EMBEDDING_ITERATIONS_T": 5,
 
             # Learning
-            "NR_EPISODES": 1001,
+            "NR_EPISODES": 5001,
             "MEMORY_CAPACITY": 2048,
             "N_STEP_QL": 4,
-            "BATCH_SIZE": 128,
+            "BATCH_SIZE": 64,
             "GAMMA": 0.5,
             "INIT_LR": 5e-3,
             "LR_DECAY_RATE": 1. - 5e-5,
-            "MIN_EPSILON": 0.05,
+            "MIN_EPSILON": 0.25,
             # "EPSILON_DECAY_RATE": 2e-3,
             "EPSILON_DECAY_RATE": 5e-5,
 

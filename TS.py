@@ -3,7 +3,7 @@ import time
 from functools import lru_cache
 
 class TabuSearch:
-    def __init__(self, P, time_limit=100, alfa_limit=50):
+    def __init__(self, P, time_limit=100, alfa_limit=100):
         self.alfa_limit = alfa_limit
         self.time_limit = time_limit
         self._P = P
@@ -22,13 +22,14 @@ class TabuSearch:
             self._sol_expolored += 1
             if best[0] > self.best_x[0]:
                  self.best_x = best
-            # print(f"steps: {steps}, best: {best}")
+            print(f"steps: {steps}, best: {best[0]}")
 
         print(f"Explored: {self._sol_expolored}")
         return self.best_x
 
     def diversification(self):
         random_sol = self._P.get_random_solution()
+        print(f"RND_SOL: {len(random_sol)}")
         return (self._P.objective(random_sol), random_sol)
 
     def set_solution(self, solution):
@@ -46,9 +47,10 @@ class TabuSearch:
         TL = set()
 
         while alfa <= self.alfa_limit:
-            neighs = self._P.get_neighs(solution[1])
-            neighs = [ (self._P.objective(s), s) for s in neighs if s not in TL ]
-            # __neighs = self._P.get_neighs_fast(self.x)
+            # neighs = self._P.get_neighs(solution[1])
+            # neighs = [ (self._P.objective(s), s) for s in neighs if s not in TL ]
+            neighs = self._P.get_neighs_fast(solution)
+            neighs = [ s for s in neighs if s[1] not in TL ]
 
             if len(neighs) == 0: return None
             # if time.time() - self.start_time > self.time_limit: break
