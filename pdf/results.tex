@@ -1,51 +1,76 @@
 \begin{center}
-  \begin{tabular}{ l|l|l|l|l }
+  \begin{tabular}{ c|c|c|c|c }
     \hline
-    \textbf{Instance} & \textbf{N} & \textbf{MAMMDP} & \textbf{RLTS} & \textbf{DQNTS} \\ \hline
-    MDPI1\_150 & 150 & 45.920 & 0 & 45.920 \\ \hline
-    MDPI2\_150 & 150 & 43.392 & 0 & 53.615 \\ \hline
-    MDPI3\_150 & 150 & 40.046 & 0 & 40.551 \\ \hline
-    MDPI4\_150 & 150 & 44.044 & 0 & 44.255 \\ \hline
-    MDPI5\_150 & 150 & 42.479 & 0 & 44.027 \\ \hline
-    MDPI6\_150 & 150 & 43.723 & 0 & 48.868 \\ \hline
-    MDPI7\_150 & 150 & 46.077 & 0 & 41.905 \\ \hline
-    MDPI8\_150 & 150 & 42.451 & 0 & 47.971 \\ \hline
-    MDPI9\_150 & 150 & 42.480 & 0 & 38.179 \\ \hline
-    MDPI10\_150 & 150 & 41.798 & 0 & 41.798 \\ \hline
+    \textbf{Instance} & \textbf{N} & \textbf{RLTS} & \textbf{DQNTS} & \textbf{Obj. Gap} \\ \hline
+    MDPI1\_150 & 150 & 45.920 & 45.920 & 0.000 \\ \hline
+    MDPI2\_150 & 150 & \textbf{43.392} & 43.386 & 0.006 \\ \hline
+    MDPI3\_150 & 150 & \textbf{40.046} & 40.037 & 0.011 \\ \hline
+    MDPI4\_150 & 150 & 44.044 & 44.044 & 0.000 \\ \hline
+    MDPI5\_150 & 150 & 42.479 & 42.479 & 0.000 \\ \hline
+    MDPI6\_150 & 150 & 43.723 & 43.723 & 0.000 \\ \hline
+    MDPI7\_150 & 150 & 46.077 & 46.077 & 0.000 \\ \hline
+    MDPI8\_150 & 150 & 42.451 & 42.451 & 0.000 \\ \hline
+    MDPI9\_150 & 150 & 42.480 & 42.480 & 0.000 \\ \hline
+    MDPI10\_150 & 150 & 41.798 & 41.798 & 0.000 \\ \hline
+  \end{tabular}
+  \bigskip
+  \begin{tabular}{ c|c|c|c|c }
     \hline
-    MDPI1\_500 & 500 & 81.277 & 81.277  & 63.982 \\ \hline
-    MDPI2\_500 & 500 & 78.610 & 78.610  & 79.050 \\ \hline
-    MDPI3\_500 & 500 & 76.301 & 76.301  & 70.006 \\ \hline
-    MDPI4\_500 & 500 & 82.332 & 82.332  & 84.137 \\ \hline
-    MDPI5\_500 & 500 & 80.354 & 80.354  & 81.011 \\ \hline
-    MDPI6\_500 & 500 & 81.249 & 81.249  & 85.059 \\ \hline
-    MDPI7\_500 & 500 & 78.165 & 78.165  & 72.869 \\ \hline
-    MDPI8\_500 & 500 & 79.140 & 79.140  & 74.365 \\ \hline
-    MDPI9\_500 & 500 & 77.421 & 77.421  & 68.911 \\ \hline
-    MDPI10\_500 & 500 & 81.310 & 81.310  & 81.310 \\ \hline
+    \textbf{Instance} & \textbf{N} & \textbf{RLTS} & \textbf{DQNTS} & \textbf{Obj. Gap} \\ \hline
+    MDPI1\_500 & 500 & \textbf{81.277} & 81.134 & 0.143 \\ \hline
+    MDPI2\_500 & 500 & 78.610 & 78.610 & 0.000 \\ \hline
+    MDPI3\_500 & 500 & \textbf{76.301} & 76.087 & 0.214 \\ \hline
+    MDPI4\_500 & 500 & \textbf{82.332} & 82.229 & 0.103 \\ \hline
+    MDPI5\_500 & 500 & \textbf{80.354} & 80.195 & 0.150 \\ \hline
+    MDPI6\_500 & 500 & 81.249 & 81.249 & 0.000 \\ \hline
+    MDPI7\_500 & 500 & \textbf{78.165} & 77.323 & 0.842 \\ \hline
+    MDPI8\_500 & 500 & \textbf{79.140} & 78.931 & 0.209 \\ \hline
+    MDPI9\_500 & 500 & \textbf{77.421} & 77.352 & 0.069 \\ \hline
+    MDPI10\_500 & 500 & 81.310 & 81.183 & 0.000 \\ \hline
+  \end{tabular}
+  \bigskip
+  \begin{tabular}{ c|c|c|c|c }
     \hline
-    MDPI1\_750 & 750 & 96.651 & 96.651 & 95.385 \\ \hline
-    MDPI2\_750 & 750 & 97.565 & 97.565 & 98.667 \\ \hline
-    MDPI3\_750 & 750 & 97.799 & 97.799 & 97.924 \\ \hline
-    MDPI4\_750 & 750 & 96.041 & 96.041 & 94.651 \\ \hline
-    MDPI5\_750 & 750 & 96.762 & 96.762 & 88.796 \\ \hline
-    MDPI6\_750 & 750 & 99.861 & 99.861 & 103.78 \\ \hline
-    MDPI7\_750 & 750 & 96.545 & 96.545 & 72.990 \\ \hline
-    MDPI8\_750 & 750 & 96.727 & 96.727 & 95.034 \\ \hline
-    MDPI9\_750 & 750 & 98.058 & 98.058 & 66.766 \\ \hline
-    MDPI10\_750 & 750 & 100.060 & 100.060 & 100.005 \\ \hline
+    \textbf{Instance} & \textbf{N} & \textbf{RLTS} & \textbf{DQNTS} & \textbf{Obj. Gap} \\ \hline
+    MDPI1\_750 & 750 & \textbf{96.651} & 94.949 & 1.702 \\ \hline
+    MDPI2\_750 & 750 & \textbf{97.565} & 94.333 & 3.232 \\ \hline
+    MDPI3\_750 & 750 & \textbf{97.799} & 96.980 & 0.819 \\ \hline
+    MDPI4\_750 & 750 & \textbf{96.041} & 95.166 & 0.875 \\ \hline
+    MDPI5\_750 & 750 & \textbf{96.762} & 95.455 & 1.307 \\ \hline
+    MDPI6\_750 & 750 & \textbf{99.861} & 98.651 & 1.210 \\ \hline
+    MDPI7\_750 & 750 & \textbf{96.545} & 95.178 & 1.397 \\ \hline
+    MDPI8\_750 & 750 & \textbf{96.727} & 95.401 & 1.326 \\ \hline
+    MDPI9\_750 & 750 & \textbf{98.058} & 97.394 & 0.664 \\ \hline
+    MDPI10\_750 & 750 & \textbf{100.060} & 100.005 & 0.055 \\ \hline
+  \end{tabular}
+  \bigskip
+  \begin{tabular}{ c|c|c|c|c }
     \hline
-    MDPI1\_1000 & 1000 & 119.174 & 119.174 & 117.817 \\ \hline
-    MDPI2\_1000 & 1000 & 113.525 & 113.525 & 113.417 \\ \hline
-    MDPI3\_1000 & 1000 & 115.139 & 115.139 & 101.471 \\ \hline
-    MDPI4\_1000 & 1000 & 111.150 & 111.150 & 103.959 \\ \hline
-    MDPI5\_1000 & 1000 & 112.723 & 112.723 & 84.118 \\ \hline
-    MDPI6\_1000 & 1000 & 113.199 & 113.199 & 111.463 \\ \hline
-    MDPI7\_1000 & 1000 & 111.556 & 111.556 & 109.773 \\ \hline
-    MDPI8\_1000 & 1000 & 111.263 & 111.263 & 109.865 \\ \hline
-    MDPI9\_1000 & 1000 & 115.959 & 115.959 & 112.635 \\ \hline
-    MDPI10\_1000 & 1000 & 114.731 & 114.731 & 113.717 \\ \hline
+    \textbf{Instance} & \textbf{N} & \textbf{RLTS} & \textbf{DQNTS} & \textbf{Obj. Gap} \\ \hline
+    MDPI1\_1000 & 1000 & \textbf{119.174} & 117.273 & 1.901 \\ \hline
+    MDPI2\_1000 & 1000 & \textbf{113.525} & 113.417 & 0.108 \\ \hline
+    MDPI3\_1000 & 1000 & \textbf{115.139} & 113.680 & 1.459 \\ \hline
+    MDPI4\_1000 & 1000 & \textbf{111.150} & 109.882 & 1.268 \\ \hline
+    MDPI5\_1000 & 1000 & \textbf{112.723} & 112.723 & 0.000 \\ \hline
+    MDPI6\_1000 & 1000 & \textbf{113.199} & 110.309 & 2.810 \\ \hline
+    MDPI7\_1000 & 1000 & \textbf{111.556} & 109.730 & 1.826 \\ \hline
+    MDPI8\_1000 & 1000 & \textbf{111.263} & 110.369 & 0.894 \\ \hline
+    MDPI9\_1000 & 1000 & \textbf{115.959} & 114.812 & 1.147 \\ \hline
+    MDPI10\_1000 & 1000 & \textbf{114.731} & 113.717 & 1.014 \\ \hline
+  \end{tabular}
+  \bigskip
+  \begin{tabular}{ c|c|c|c|c }
     \hline
-
+    \textbf{Instance} & \textbf{N} & \textbf{RLTS} & \textbf{DQNTS} & \textbf{Obj. Gap} \\ \hline
+    MDPI1\_5000 & 5000 & 240.159 & \textbf{245.624} & 5.465 \\ \hline
+    MDPI2\_5000 & 5000 & 241.827 & \textbf{245.669} & 3.842 \\ \hline
+    MDPI3\_5000 & 5000 & 240.890 & \textbf{245.858} & 4.968 \\ \hline
+    MDPI4\_5000 & 5000 & 240.997 & \textbf{248.330} & 7.333 \\ \hline
+    MDPI5\_5000 & 5000 & 242.480 & \textbf{245.765} & 3.315 \\ \hline
+    MDPI6\_5000 & 5000 & 240.329 & \textbf{246.188} & 5.859 \\ \hline
+    MDPI7\_5000 & 5000 & 242.820 & \textbf{245.399} & 2.579 \\ \hline
+    MDPI8\_5000 & 5000 & 241.195 & \textbf{244.498} & 3.303 \\ \hline
+    MDPI9\_5000 & 5000 & \textbf{239.761} & 211.580 & 28.181 \\ \hline
+    MDPI10\_5000 & 5000 & 243.474 & \textbf{247.482} & 4.008 \\ \hline
   \end{tabular}
 \end{center}
