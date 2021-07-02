@@ -7,9 +7,9 @@ class TabuSearch:
         self.alfa_limit = alfa_limit
         self.time_limit = time_limit
         self._P = P
+        self.TL = set()
         self.best_x = (0, {})
         self._sol_expolored = 0
-        self._visited_table = {}
         self.div_function = self.diversification
 
     def solve(self, div_function):
@@ -29,7 +29,6 @@ class TabuSearch:
 
     def diversification(self):
         random_sol = self._P.get_random_solution()
-        print(f"RND_SOL: {len(random_sol)}")
         return (self._P.objective(random_sol), random_sol)
 
     def set_solution(self, solution):
@@ -42,18 +41,18 @@ class TabuSearch:
         else: solution = (self._P.objective(raw_solution), raw_solution)
 
         alfa = 0
-        best = solution
         steps = 0
-        TL = set()
+        best = solution
 
         while alfa <= self.alfa_limit:
             # neighs = self._P.get_neighs(solution[1])
             # neighs = [ (self._P.objective(s), s) for s in neighs if s not in TL ]
             neighs = self._P.get_neighs_fast(solution)
-            neighs = [ s for s in neighs if s[1] not in TL ]
+            neighs = [ s for s in neighs if s[1] not in self.TL ]
 
             if len(neighs) == 0: return None
-            # if time.time() - self.start_time > self.time_limit: break
+            time_diff = time.time() - self.start_time
+            if time_diff > self.time_limit: break
 
             solution = max(neighs)
             alfa += 1
@@ -63,13 +62,5 @@ class TabuSearch:
                 best = solution
                 alfa = 0
 
-            TL.add(frozenset(solution[1]))
-
+            self.TL.add(frozenset(solution[1]))
         return best, steps
-
-
-
-# mmdp = MMDP()
-# ts = TabuSearch(mmdp)
-# solution = ts.solve()
-# print(solution)

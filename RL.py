@@ -142,8 +142,6 @@ class QFunction():
         graph = state.graph
         W = graph.W.to(device)
         state_tsr = state_tsr.to(device)
-        # print(W.device)
-        # print(state_tsr.device)
         estimated_rewards = self.predict(state_tsr, W)  # size (nr_nodes,)
         estimated_rewards = np.interp(estimated_rewards.to("cpu"), (estimated_rewards.min(), estimated_rewards.max()), (-1, +1))
         estimated_rewards = torch.from_numpy(estimated_rewards)
@@ -171,14 +169,9 @@ class QFunction():
         self.optimizer.zero_grad()
 
         # the rewards estimated by Q for the given actions
-        # print(f"xv.device: {xv.device}")
-        # print(f"Ws_tsr.device: {Ws_tsr.device}")
         estimated_rewards = self.model(xv.float(), Ws_tsr.float())
         estimated_rewards = estimated_rewards[range(len(actions)), actions]
         targets = torch.tensor(targets, dtype=torch.float32, device=device)
-
-        # print(f"estimated: {estimated_rewards}")
-        # print(f"targets: {targets}")
 
         loss = self.loss_fn(estimated_rewards, targets)
         loss_val = loss.item()
@@ -280,7 +273,6 @@ def training(P):
 
     for episode in range(P["NR_EPISODES"]):
         # sample a new random graph
-        # graph = Graph(n=P["NR_NODES"], nu=P["GRAPH_NU"])
         graph = MMDP()
         ts = TabuSearch(graph)
 
@@ -303,7 +295,6 @@ def training(P):
 
         # current value of epsilon
         epsilon = max(P["MIN_EPSILON"], (1-P["EPSILON_DECAY_RATE"])**episode)
-        # epsilon = 0.9
 
         nr_explores = 0
         t = -1
@@ -340,17 +331,8 @@ def training(P):
         best, _ = ts.intensification(frozenset(solution))
         best_objective = best[0]
         best_solution = best[1]
-        # not_in = sum([ 1 for node in solution if node not in best_solution ])
-        # in_best = len(best_solution)
 
         rewards = [ 1 if node in best_solution else -1 for node in solution ]
-
-
-        # print(f"solution: {solution}")
-        # print(f"best_solution: {best_solution}")
-        # print(f"actions: {actions}")
-        # print(f"rewards: {rewards}")
-        # print(f"est_rewards: {est_rewards}")
 
         for n in range(1, len(solution)):
             memory.remember(Experience(state=states[-n],
@@ -376,7 +358,6 @@ def training(P):
                     target += P["GAMMA"] * best_reward
                 batch_targets.append(target)
 
-            # print('batch targets: {}'.format(batch_targets))
             loss = Q_func.batch_update(batch_states_tsrs, batch_Ws, batch_actions, batch_targets)
             losses.append(loss)
 
@@ -401,120 +382,6 @@ def training(P):
                 )
             )
 
-
-
-
-
-        # while True:
-        #     t += 1  # time step of this episode
-
-        #     est_reward = None
-        #     if len(solution) > graph.n*3//4: break
-        #     if epsilon >= random.random():
-        #         # explore
-        #         candidate_nodes = graph.get_candidate_nodes(solution)
-        #         if len(candidate_nodes) == 0:
-        #             break
-        #         next_node = random.sample(candidate_nodes, 1)[0]
-        #         nr_explores += 1
-        #     else:
-        #         # exploit
-        #         next_node, est_reward = Q_func.get_best_action(current_state_tsr, current_state)
-        #         if est_reward < 0:
-        #             for n in range(1, len(solution)):
-        #                 memory.remember(Experience(state=states[-n],
-        #                                         state_tsr=states_tsrs[-n],
-        #                                         action=actions[-n],
-        #                                         reward=sum(rewards[-n:]),
-        #                                         next_state=next_state,
-        #                                         next_state_tsr=next_state_tsr))
-        #             break
-
-        #     next_solution = solution + [next_node]
-
-        #     # reward observed for taking this step
-        #     # _, steps_next_solution = ts.intensification(frozenset(next_solution))
-        #     # _, steps_solution = ts.intensification(frozenset(solution))
-        #     reward = graph.objective(next_solution) - graph.objective(solution)
-
-        #     if episode % 50 == 0 and est_reward is not None:
-        #         print('Ep {} | current sol: {} / reward: {} / next est reward: {}'.format(episode, solution, reward, est_reward))
-
-        #     # print(f"{steps_solution} -> {steps_next_solution}: {reward}")
-
-        #     next_state = State(partial_solution=next_solution, graph=graph)
-        #     next_state_tsr = state2tens(next_state)
-
-        #     # store rewards and states obtained along this episode:
-        #     states.append(next_state)
-        #     states_tsrs.append(next_state_tsr)
-        #     rewards.append(reward)
-        #     actions.append(next_node)
-
-        #     # store our experience in memory, using n-step Q-learning:
-        #     # if len(solution) >= N_STEP_QL:
-        #     if len(solution) >= P["N_STEP_QL"]:
-        #         memory.remember(Experience(state=states[-P["N_STEP_QL"]],
-        #                                 state_tsr=states_tsrs[-P["N_STEP_QL"]],
-        #                                 action=actions[-P["N_STEP_QL"]],
-        #                                 reward=sum(rewards[-P["N_STEP_QL"]:]),
-        #                                 next_state=next_state,
-        #                                 next_state_tsr=next_state_tsr))
-
-        #     # if graph.is_solution_final(tuple(solution)):
-        #     #     for n in range(1, len(solution)):
-        #     #         memory.remember(Experience(state=states[-n],
-        #     #                                 state_tsr=states_tsrs[-n],
-        #     #                                 action=actions[-n],
-        #     #                                 reward=sum(rewards[-n:]),
-        #     #                                 next_state=next_state,
-        #     #                                 next_state_tsr=next_state_tsr))
-
-        #     # update state and current solution
-        #     current_state = next_state
-        #     current_state_tsr = next_state_tsr
-        #     solution = next_solution
-
-        #     # take a gradient step
-        #     loss = None
-        #     if len(memory) >= P["BATCH_SIZE"]:
-        #         experiences = memory.sample_batch(P["BATCH_SIZE"])
-
-        #         batch_states_tsrs = [e.state_tsr for e in experiences]
-        #         batch_Ws = [e.state.graph.W for e in experiences]
-        #         batch_actions = [e.action for e in experiences]
-        #         batch_targets = []
-
-        #         for i, experience in enumerate(experiences):
-        #             target = experience.reward
-        #             _, best_reward = Q_func.get_best_action(experience.next_state_tsr, experience.next_state)
-        #             if best_reward >= 0:
-        #                 target += P["GAMMA"] * best_reward
-        #             batch_targets.append(target)
-
-        #         # print('batch targets: {}'.format(batch_targets))
-        #         loss = Q_func.batch_update(batch_states_tsrs, batch_Ws, batch_actions, batch_targets)
-        #         losses.append(loss)
-
-        #         """ Save model when we reach a new low average solution weight
-        #         """
-        #         med_weight = np.median(path_weights[-100:])
-        #         if med_weight > current_min_med_weight:
-        #             current_min_med_weight = med_weight
-        #             checkpoint_model(Q_net, optimizer, lr_scheduler, loss, episode, med_weight)
-
-        # # length = total_distance(solution, W)
-        # # print(f"solution ({graph.objective(solution)}): {solution}")
-        # weight = int(graph.objective(solution))
-        # # _, greedy_weight = graph.greedy_co()
-        # path_weights.append(weight)
-
-        # if episode % 10 == 0:
-        #     print('Ep %d. Loss = %.3f / median weight = %.3f / last = %.4f / epsilon = %.4f / lr = %.4f / memory = %d / sol_length = %d' % (
-        #         episode, (-1 if loss is None else loss), np.median(path_weights[-50:]), weight, epsilon,
-        #         Q_func.optimizer.param_groups[0]['lr'], len(memory), len(solution)))
-        #     # found_solutions[episode] = (W.clone(), graph.coords.copy(), [n for n in solution])
-
     # plot loss and obj
     plt.figure(figsize=(8,5))
     plt.title("Loss function")
@@ -533,7 +400,6 @@ def training(P):
 def test(P, instance):
     all_weights_fnames = [f for f in os.listdir(P["FOLDER_NAME"]) if f.endswith('.tar')]
     highest_fname = sorted(all_weights_fnames, key=lambda s: float(s.split('.tar')[0].split('_')[-1]))[-1]
-    # print('max avg weight found: {}'.format(highest_fname.split('.tar')[0].split('_')[-1]))
 
     """ Load checkpoint
     """
@@ -552,8 +418,14 @@ def test(P, instance):
 
     graph = MMDP(instance)
     time_limit = 10
+    if "5000" not in instance: return
     if "500" in instance or "1000" in instance or "750" in instance:
         time_limit = 100
+    if "3000" in instance:
+        time_limit = 1000
+    if "5000" in instance:
+        time_limit = 2000
+
     ts = TabuSearch(graph, time_limit=time_limit)
 
     print(f"Testing over {instance} at {datetime.datetime.now()} for {time_limit}s")
@@ -561,7 +433,7 @@ def test(P, instance):
     W = torch.tensor(graph.W_np, dtype=torch.float32, requires_grad=False, device=device)
 
 
-    # generate a initial solution
+    # generate a initial solution TOO SLOW
     # def diversification():
     #     nn_solution = []
     #     current_state = State(partial_solution=nn_solution, graph=graph)
@@ -574,6 +446,7 @@ def test(P, instance):
     #         current_state_tsr = state2tens(current_state)
     #     print(f"NN_SOL: {nn_solution}")
     #     return (graph.objective(nn_solution), nn_solution)
+
     def diversification():
         nn_solution = []
         current_state = State(partial_solution=nn_solution, graph=graph)
@@ -581,28 +454,17 @@ def test(P, instance):
         idx, est_rewards = Q_func.evaluate_nodes(current_state_tsr,  current_state)
 
         good_nodes = idx[est_rewards >= 0]
-        min_nodes = max(len(good_nodes)//4, 2)
+        min_nodes = max(len(good_nodes)//2, 2)
         selected_node = random.sample(list(good_nodes), random.randint(min_nodes, len(good_nodes)))
         selected_node = [ int(n) for n in selected_node ]
         nn_solution += selected_node
 
         current_state = State(partial_solution=nn_solution, graph=graph)
         current_state_tsr = state2tens(current_state)
-        # while True:
-        #     idx, est_rewards = Q_func.evaluate_nodes(current_state_tsr,  current_state)
-        #     # if (est_rewards >= 0).sum() == 0 and len(nn_solution) >= 2: break
-        #     if len(nn_solution) >= 2: break
-
-        #     good_nodes = idx[est_rewards >= 0]
-        #     selected_node = random.sample(list(good_nodes), random.randint(2, len(good_nodes)))
-        #     nn_solution += selected_node
-
-        #     current_state = State(partial_solution=nn_solution, graph=graph)
-        #     current_state_tsr = state2tens(current_state)
         nn_solution = list(nn_solution)
-        # print(f"NN_SOL: {len(nn_solution)}")
         return (graph.objective(nn_solution), nn_solution)
 
+    # write results to file
     f = open("results.txt", "a")
     r = open(f"solutions/{instance}.sol", "a")
 
@@ -611,37 +473,35 @@ def test(P, instance):
 
     f.write(f"{instance}: {solution[0]}\n")
     r.write(f"{solution[1]}")
+    exit(0)
 
 def main(parameters):
     training(parameters)
-    # typeI = glob.glob("instances/typeI/*")
-    # typeII = glob.glob("instances/typeII/*")
-    # instances = typeI + typeII
-    # instances.sort()
-    # for instance in instances:
-    #     test(parameters, instance)
+    typeI = glob.glob("instances/typeI/*.txt")
+    typeII = glob.glob("instances/typeII/*.txt")
+    instances = typeI + typeII
+    instances.sort()
+    for instance in instances:
+        test(parameters, instance)
 
 if __name__ == "__main__":
     PARAMETERS={
             "SEED": 1,
 
             # Graph
-            # "NR_NODES": 40,
-            # "GRAPH_NU": 25
             "EMBEDDING_DIMENSIONS": 4,
             "EMBEDDING_ITERATIONS_T": 5,
 
             # Learning
             "NR_EPISODES": 5001,
             "MEMORY_CAPACITY": 2048,
-            "N_STEP_QL": 4,
+            # "N_STEP_QL": 4,
             "BATCH_SIZE": 64,
             "GAMMA": 0.5,
             "INIT_LR": 5e-3,
             "LR_DECAY_RATE": 1. - 5e-5,
             "MIN_EPSILON": 0.25,
-            # "EPSILON_DECAY_RATE": 2e-3,
-            "EPSILON_DECAY_RATE": 5e-5,
+            "EPSILON_DECAY_RATE": 5e-4,
 
             # where to save best models
             "FOLDER_NAME": './models'
