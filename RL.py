@@ -418,7 +418,6 @@ def test(P, instance):
 
     graph = MMDP(instance)
     time_limit = 10
-    if "5000" not in instance: return
     if "500" in instance or "1000" in instance or "750" in instance:
         time_limit = 100
     if "3000" in instance:
@@ -444,7 +443,6 @@ def test(P, instance):
     #         nn_solution = nn_solution + next_node
     #         current_state = State(partial_solution=nn_solution, graph=graph)
     #         current_state_tsr = state2tens(current_state)
-    #     print(f"NN_SOL: {nn_solution}")
     #     return (graph.objective(nn_solution), nn_solution)
 
     def diversification():
