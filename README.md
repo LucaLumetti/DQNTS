@@ -36,4 +36,4 @@ DQN is used during the construction of the initial solution:
 for all the nodes, the network estimates the reward, then all the values estimated get interpolated in the range $[-1,+1]$. All the nodes with a value $>= 0$ are named as "good nodes". Among these "good nodes", a random amount is taken to construct the initial solution. Picking one node at a time would result in a better solution, but this approach was too slow for large graphs. This solution is then processed with a one-flip tabu search until no best solutions are found for $\alpha = 100$ iterations in a row.  Now a new initial solution is generated and the process is repeated until the time limit is not violated. Finally, the best solution found is returned.
 
 ### Result
-Results can be seen on the pdf [presentation](https://github.com/LucaLumetti/DQNTS/tree/main/pdf) uploaded in this repository under the pdf directory.
+Results can be seen on the pdf [presentation](https://github.com/LucaLumetti/DQNTS/blob/main/pdf/main.pdf) uploaded in this repository under the pdf directory.
